@@ -1,47 +1,45 @@
 package im
 
 import (
-	"log"
-
 	"github.com/iam1912/gemim/model"
 )
 
 type broadcast struct {
-	users                 map[string]*UserConn
+	users                 map[int]*UserConn
 	enteringChannel       chan *UserConn
 	leavingChannel        chan *UserConn
-	MessageChannel        chan *model.Message
-	checkUserChannel      chan string
+	messageChannel        chan *model.Message
+	checkUserChannel      chan int
 	checkUserCanInChannel chan bool
-	usersChannel          chan []*model.User
-	requestUsersChannel   chan struct{}
 }
 
 var GlobalBroadcast = &broadcast{
-	users:                 make(map[string]*UserConn),
+	users:                 make(map[int]*UserConn),
 	enteringChannel:       make(chan *UserConn),
 	leavingChannel:        make(chan *UserConn),
-	MessageChannel:        make(chan *model.Message, 1024),
-	checkUserChannel:      make(chan string),
+	messageChannel:        make(chan *model.Message),
+	checkUserChannel:      make(chan int),
 	checkUserCanInChannel: make(chan bool),
-	usersChannel:          make(chan []*model.User),
-	requestUsersChannel:   make(chan struct{}),
 }
 
 func (b *broadcast) Run() {
 	for {
 		select {
 		case user := <-b.enteringChannel:
-			b.users[user.user.NickName] = user
+			b.users[user.ID] = user
+			OfflineProcessor.Send(user)
 		case user := <-b.leavingChannel:
-			delete(b.users, user.user.NickName)
+			delete(b.users, user.ID)
 			user.CloseMessageChannel()
-		case msg := <-b.MessageChannel:
+		case msg := <-b.messageChannel:
 			for _, user := range b.users {
-				if user.user.ID == msg.User.ID {
+				if user.ID == msg.User.ID {
 					continue
 				}
 				user.MessageChannel <- msg
+			}
+			if msg.Type == model.MsgTypeNormal {
+				OfflineProcessor.Save(msg)
 			}
 		case name := <-b.checkUserChannel:
 			if _, ok := b.users[name]; ok {
@@ -49,36 +47,36 @@ func (b *broadcast) Run() {
 			} else {
 				b.checkUserCanInChannel <- true
 			}
-		case <-b.requestUsersChannel:
-			userList := make([]*model.User, 0, len(b.users))
-			for _, user := range b.users {
-				userList = append(userList, user.user)
-			}
 		}
 	}
 }
 
-func (b *broadcast) UserEntering(u *UserConn) {
-	b.enteringChannel <- u
+func (b *broadcast) UserEntering(user *UserConn) {
+	b.enteringChannel <- user
 }
 
-func (b *broadcast) UserLeaving(u *UserConn) {
-	b.leavingChannel <- u
+func (b *broadcast) UserLeaving(user *UserConn) {
+	b.leavingChannel <- user
 }
 
 func (b *broadcast) Broadcast(msg *model.Message) {
-	if len(b.MessageChannel) >= 1024 {
-		log.Println("broadcast queue 满了")
-	}
-	b.MessageChannel <- msg
+	b.messageChannel <- msg
 }
 
-func (b *broadcast) CanEnterRoom(name string) bool {
-	b.checkUserChannel <- name
+func (b *broadcast) CanEnterRoom(id int) bool {
+	b.checkUserChannel <- id
 	return <-b.checkUserCanInChannel
 }
 
-func (b *broadcast) GetUserList() []*model.User {
-	b.requestUsersChannel <- struct{}{}
-	return <-b.usersChannel
+func (b *broadcast) NotificationEntry(user *model.User, userConn *UserConn) {
+	userConn.MessageChannel <- model.NewWelcomeMessage(user)
+	msg := model.NewUserEnterMessage(user)
+	GlobalBroadcast.Broadcast(msg)
+	GlobalBroadcast.UserEntering(userConn)
+}
+
+func (b *broadcast) NotificationLeaving(user *model.User, userConn *UserConn) {
+	GlobalBroadcast.UserLeaving(userConn)
+	msg := model.NewUserLeaveMessage(user)
+	GlobalBroadcast.Broadcast(msg)
 }

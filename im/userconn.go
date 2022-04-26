@@ -11,14 +11,14 @@ import (
 )
 
 type UserConn struct {
-	user           *model.User
+	ID             int
 	MessageChannel chan *model.Message
 	conn           *websocket.Conn
 }
 
-func NewUserConn(c *websocket.Conn, user *model.User) *UserConn {
+func NewUserConn(c *websocket.Conn, id int) *UserConn {
 	return &UserConn{
-		user:           user,
+		ID:             id,
 		MessageChannel: make(chan *model.Message, 32),
 		conn:           c,
 	}
@@ -47,6 +47,7 @@ func (c *UserConn) Read(ctx context.Context, user *model.User) error {
 			return err
 		}
 		sendMsg := model.NewMessage(user, receiveMsg["content"], receiveMsg["send_time"])
+		sendMsg.SplicingAt()
 		GlobalBroadcast.Broadcast(sendMsg)
 	}
 }

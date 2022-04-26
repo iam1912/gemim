@@ -3,6 +3,7 @@ package ws
 import (
 	"log"
 	"net/http"
+	"net/url"
 
 	"github.com/iam1912/gemim/handler/helpers"
 	"github.com/iam1912/gemim/im"
@@ -27,39 +28,32 @@ func (h Handler) Ws(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	token := r.FormValue("token")
+	token := url.QueryEscape(r.FormValue("token"))
+	token, _ = url.PathUnescape(token)
 	nickname := r.FormValue("nickname")
 	ctx := r.Context()
 
 	if l := len(nickname); l < 2 || l > 20 {
-		// log.Println("nickname illegal: ", nickname)
 		helpers.WirteAndClose(model.NewErrorMessage("非法昵称"), conn, ctx, "nickname illegal")
 		return
 	}
 
-	user := model.FindAndCreateUser(h.DB, token, nickname, r.RemoteAddr)
-	if !im.GlobalBroadcast.CanEnterRoom(user.NickName) {
-		// log.Println("用户已经存在：", nickname)
+	user := model.FindOrCreateUser(h.DB, token, nickname, r.RemoteAddr)
+	if !im.GlobalBroadcast.CanEnterRoom(user.ID) {
 		helpers.WirteAndClose(model.NewErrorMessage("当前用户已存在"), conn, ctx, "user is exist")
 		return
 	}
 
-	userConn := im.NewUserConn(conn, user)
+	userConn := im.NewUserConn(conn, user.ID)
 	go userConn.Write(ctx)
 
-	userConn.MessageChannel <- model.NewWelcomeMessage(user)
-	msg := model.NewUserEnterMessage(user)
-	im.GlobalBroadcast.Broadcast(msg)
-
-	im.GlobalBroadcast.UserEntering(userConn)
-	// log.Println("user:", nickname, "joins chat")
+	im.GlobalBroadcast.NotificationEntry(user, userConn)
+	user.UpdateOnline(h.DB, true)
 
 	err = userConn.Read(ctx, user)
 
-	im.GlobalBroadcast.UserLeaving(userConn)
-	msg = model.NewUserLeaveMessage(user)
-	im.GlobalBroadcast.Broadcast(msg)
-	// log.Println("user:", nickname, "leaves chat")
+	im.GlobalBroadcast.NotificationLeaving(user, userConn)
+	user.UpdateOnline(h.DB, false)
 
 	if err == nil {
 		conn.Close(websocket.StatusNormalClosure, "")

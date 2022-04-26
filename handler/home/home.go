@@ -6,7 +6,7 @@ import (
 	"text/template"
 
 	"github.com/iam1912/gemim/handler/helpers"
-	"github.com/iam1912/gemim/im"
+	"github.com/iam1912/gemim/model"
 	"github.com/jinzhu/gorm"
 )
 
@@ -35,9 +35,10 @@ func (h Handler) Home(w http.ResponseWriter, req *http.Request) {
 }
 
 func (h Handler) UserList(w http.ResponseWriter, req *http.Request) {
-	userList := im.GlobalBroadcast.GetUserList()
-	if len(userList) == 0 {
+	users := []model.User{}
+	h.DB.Where("is_online = ?", true).Find(&users)
+	if len(users) == 0 {
 		helpers.RenderFailureJSON(w, "[]")
 	}
-	helpers.RenderSuccessJSON(w, userList)
+	helpers.RenderSuccessJSON(w, users)
 }

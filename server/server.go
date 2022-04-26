@@ -11,7 +11,7 @@ import (
 
 func RegisterHandles(db *gorm.DB) {
 	go im.GlobalBroadcast.Run()
-	
+
 	homeHandler := home.NewHandler(db)
 	wsHandler := ws.NewHandler(db)
 

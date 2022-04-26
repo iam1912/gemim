@@ -1,6 +1,8 @@
 package model
 
 import (
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/spf13/cast"
@@ -15,9 +17,13 @@ const (
 )
 
 type Message struct {
-	User           *User     `json:"user"`
-	Type           int       `json:"type"`
-	Content        string    `json:"content"`
+	ID             int `gorm:"primary_key"`
+	UserID         int
+	User           *User    `json:"user" gorm:"-"`
+	Type           int      `json:"type"`
+	Content        string   `json:"content"`
+	Ats            []string `json:"ats" gorm:"-"`
+	AtList         string
 	MsgTime        time.Time `json:"msg_time"`
 	ClientSendTime time.Time `json:"client_send_time"`
 }
@@ -25,6 +31,7 @@ type Message struct {
 func NewMessage(user *User, content, clientTime string) *Message {
 	message := &Message{
 		User:    user,
+		UserID:  user.ID,
 		Type:    MsgTypeNormal,
 		Content: content,
 		MsgTime: time.Now(),
@@ -33,6 +40,12 @@ func NewMessage(user *User, content, clientTime string) *Message {
 		message.ClientSendTime = time.Unix(0, cast.ToInt64(clientTime))
 	}
 	return message
+}
+
+func (m *Message) SplicingAt() {
+	reg := regexp.MustCompile(`@[^\s@]{2,20}`)
+	m.Ats = reg.FindAllString(m.Content, -1)
+	m.AtList = strings.Join(m.Ats, "-")
 }
 
 func NewWelcomeMessage(user *User) *Message {

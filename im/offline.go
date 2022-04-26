@@ -1,73 +1,37 @@
 package im
 
-// import (
-// 	"container/ring"
+import (
+	"container/ring"
 
-// 	"github.com/iam1912/gemim/model"
-// 	"github.com/spf13/viper"
-// )
+	"github.com/iam1912/gemim/model"
+)
 
-// type offlineProcessor struct {
-// 	n int
+type offlineProcessor struct {
+	n          int
+	recentRing *ring.Ring
+}
 
-// 	// 保存所有用户最近的 n 条消息
-// 	recentRing *ring.Ring
+var OfflineProcessor = newOfflineProcessor()
 
-// 	// 保存某个用户离线消息（一样 n 条）
-// 	userRing map[string]*ring.Ring
-// }
+func newOfflineProcessor() *offlineProcessor {
+	return &offlineProcessor{
+		n:          10,
+		recentRing: ring.New(10),
+	}
+}
 
-// var OfflineProcessor = newOfflineProcessor()
+func (o *offlineProcessor) Save(msg *model.Message) {
+	if msg.Type != model.MsgTypeNormal {
+		return
+	}
+	o.recentRing.Value = msg
+	o.recentRing = o.recentRing.Next()
+}
 
-// func newOfflineProcessor() *offlineProcessor {
-// 	n := viper.GetInt("offline-num")
-
-// 	return &offlineProcessor{
-// 		n:          n,
-// 		recentRing: ring.New(n),
-// 		userRing:   make(map[string]*ring.Ring),
-// 	}
-// }
-
-// func (o *offlineProcessor) Save(msg *model.Message) {
-// 	if msg.Type != model.MsgTypeNormal {
-// 		return
-// 	}
-// 	o.recentRing.Value = msg
-// 	o.recentRing = o.recentRing.Next()
-
-// 	for _, nickname := range msg.Ats {
-// 		nickname = nickname[1:]
-// 		var (
-// 			r  *ring.Ring
-// 			ok bool
-// 		)
-// 		if r, ok = o.userRing[nickname]; !ok {
-// 			r = ring.New(o.n)
-// 		}
-// 		r.Value = msg
-// 		o.userRing[nickname] = r.Next()
-// 	}
-// }
-
-// func (o *offlineProcessor) Send(user *model.User) {
-// 	o.recentRing.Do(func(value interface{}) {
-// 		if value != nil {
-// 			user.MessageChannel <- value.(*model.Message)
-// 		}
-// 	})
-
-// 	// if user.isNew {
-// 	// 	return
-// 	// }
-
-// 	if r, ok := o.userRing[user.NickName]; ok {
-// 		r.Do(func(value interface{}) {
-// 			if value != nil {
-// 				user.MessageChannel <- value.(*model.Message)
-// 			}
-// 		})
-
-// 		delete(o.userRing, user.NickName)
-// 	}
-// }
+func (o *offlineProcessor) Send(user *UserConn) {
+	o.recentRing.Do(func(value interface{}) {
+		if value != nil {
+			user.MessageChannel <- value.(*model.Message)
+		}
+	})
+}
