@@ -3,7 +3,7 @@ package im
 import (
 	"container/ring"
 
-	"github.com/iam1912/gemim/model"
+	"github.com/iam1912/gemseries/gemim/model"
 )
 
 type offlineProcessor struct {

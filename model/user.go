@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/iam1912/gemim/utils"
+	"github.com/iam1912/gemseries/gemim/utils"
 	"github.com/jinzhu/gorm"
 )
 

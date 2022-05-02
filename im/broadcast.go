@@ -1,8 +1,6 @@
 package im
 
-import (
-	"github.com/iam1912/gemim/model"
-)
+import "github.com/iam1912/gemseries/gemim/model"
 
 type broadcast struct {
 	users                 map[int]*UserConn

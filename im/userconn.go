@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/iam1912/gemim/model"
+	"github.com/iam1912/gemseries/gemim/model"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 )

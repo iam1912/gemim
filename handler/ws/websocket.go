@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/iam1912/gemim/handler/helpers"
-	"github.com/iam1912/gemim/im"
-	"github.com/iam1912/gemim/model"
+	"github.com/iam1912/gemseries/gemim/handler/helpers"
+	"github.com/iam1912/gemseries/gemim/im"
+	"github.com/iam1912/gemseries/gemim/model"
 	"github.com/jinzhu/gorm"
 	"nhooyr.io/websocket"
 )

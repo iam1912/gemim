@@ -5,8 +5,8 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/iam1912/gemim/handler/helpers"
-	"github.com/iam1912/gemim/model"
+	"github.com/iam1912/gemseries/gemim/handler/helpers"
+	"github.com/iam1912/gemseries/gemim/model"
 	"github.com/jinzhu/gorm"
 )
 

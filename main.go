@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/iam1912/gemim/config"
-	"github.com/iam1912/gemim/model"
-	"github.com/iam1912/gemim/server"
+	"github.com/iam1912/gemseries/gemim/config"
+	"github.com/iam1912/gemseries/gemim/model"
+	"github.com/iam1912/gemseries/gemim/server"
 )
 
 func main() {

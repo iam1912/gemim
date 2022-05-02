@@ -3,9 +3,9 @@ package server
 import (
 	"net/http"
 
-	"github.com/iam1912/gemim/handler/home"
-	"github.com/iam1912/gemim/handler/ws"
-	"github.com/iam1912/gemim/im"
+	"github.com/iam1912/gemseries/gemim/handler/home"
+	"github.com/iam1912/gemseries/gemim/handler/ws"
+	"github.com/iam1912/gemseries/gemim/im"
 	"github.com/jinzhu/gorm"
 )
 
